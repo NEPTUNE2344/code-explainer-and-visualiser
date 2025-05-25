@@ -12,11 +12,6 @@ A web app built with Flask that takes code snippets as input and explains them s
 - Responsive and modern UI with animated loading spinner.
 - "Explain Code" button is disabled when the editor is empty to prevent empty submissions.
 
----
-
-## Demo
-
-![Demo screenshot or GIF - Optional]
 
 ---
 
