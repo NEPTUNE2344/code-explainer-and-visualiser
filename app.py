@@ -1,20 +1,15 @@
-
-##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
-
 from flask import Flask, render_template, request, jsonify
 import requests
 import json
 
 app = Flask(__name__)
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 
 def get_code_explanation_and_visualization(code_snippet):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:5000",
-        "X-Title": "CodeExplainerApp"
+        "Content-Type": "application/json"
     }
 
     data = {
@@ -50,7 +45,7 @@ Code:
     if response.status_code == 200:
         content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         try:
-            # Remove any markdown formatting from raw output
+            # Remove markdown formatting if any
             content = content.strip().strip("`json").strip("`").strip()
             parsed = json.loads(content)
 
@@ -58,14 +53,13 @@ Code:
             explanation = explanation.replace("\n", "<br>")
 
             visual = parsed.get("visual", {"labels": [], "values": []})
-
             if not isinstance(visual, dict) or "labels" not in visual or "values" not in visual:
                 visual = {"labels": [], "values": []}
 
             return {"explanation": explanation, "visual": visual}
 
         except json.JSONDecodeError:
-            return {"explanation": "The AI response could not be parsed. Here's the raw output:<br><br>" + content.strip(), "visual": {"labels": [], "values": []}}
+            return {"explanation": "The AI response could not be parsed. Raw output:<br><br>" + content, "visual": {"labels": [], "values": []}}
     else:
         return {
             "explanation": f"Error: {response.status_code}<br>{response.text}",
