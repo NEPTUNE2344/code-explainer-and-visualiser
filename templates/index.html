@@ -1,1 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Code Insight & Visualizer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: radial-gradient(circle at top, #000 0%, #111 100%);
+      color: #ddd;
+    }
+    h1 {
+      text-align: center;
+      font-family: 'Trebuchet MS', sans-serif;
+      font-size: 3rem;
+      color: #eee;
+    }
+    .editor-container {
+      max-width: 900px;
+      margin: 30px auto;
+    }
+    .CodeMirror {
+      height: 300px;
+      font-size: 15px;
+      border-radius: 10px;
+      background: #111;
+      color: #c0e0ff;
+    }
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 25px;
+      font-size: 16px;
+      background: white;
+      color: black;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .content-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+    .output, .visualization {
+      flex: 1;
+      min-width: 320px;
+      background: #111;
+      border-radius: 12px;
+      padding: 20px;
+      font-family: 'Helvetica Neue', sans-serif;
+      font-weight: 300;
+      color: #b0d6ff;
+    }
+    .output h2, .visualization h2 {
+      font-size: 1.3rem;
+      border-bottom: 1px solid #333;
+      padding-bottom: 8px;
+    }
+    #loading {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    #loading div {
+      border: 6px solid #222;
+      border-top: 6px solid white;
+      border-radius: 50%;
+      width: 50px; height: 50px;
+      animation: spin 1s linear infinite;
+    }
+    #loading p {
+      color: white;
+      margin-top: 15px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Code Insight & Visualizer</h1>
+  <form id="codeForm">
+    <textarea id="code" name="code" style="display:none;"></textarea>
+    <div id="editor" class="editor-container"></div>
+    <button type="submit">Explain Code</button>
+  </form>
+  <div class="content-row">
+    <div class="output">
+      <h2>Explanation</h2>
+      <p id="explanationText">...</p>
+    </div>
+    <div class="visualization">
+      <h2>Visualization</h2>
+      <canvas id="visChart" height="300"></canvas>
+      <p id="noDataText" style="display:none;">No visualization data available.</p>
+    </div>
+  </div>
+  <div id="loading">
+    <div></div>
+    <p>Generating explanation...</p>
+  </div>
+  <script>
+    let editor = CodeMirror(document.getElementById("editor"), {
+      value: `def factorial(n):\n    if n == 0:\n        return 1\n    else:\n        return n * factorial(n-1)`,
+      mode: "python",
+      theme: "dracula",
+      lineNumbers: true
+    });
 
+    let chart;
+
+    document.getElementById("codeForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      document.getElementById("loading").style.display = "flex";
+      const code = editor.getValue();
+      const res = await fetch("/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+      document.getElementById("explanationText").innerHTML = data.explanation.replace(/\n/g, "<br>");
+      updateChart(data.visual);
+      document.getElementById("loading").style.display = "none";
+    });
+
+    function updateChart(data) {
+      const ctx = document.getElementById('visChart').getContext('2d');
+      document.getElementById("noDataText").style.display = (!data || !data.labels || data.labels.length === 0) ? "block" : "none";
+
+      if (chart) chart.destroy();
+
+      if (data && data.labels && data.labels.length > 0) {
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              label: 'Structure/Iteration Count',
+              data: data.values,
+              backgroundColor: 'rgba(255, 255, 255, 0.6)',
+              borderColor: '#fff',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
