@@ -4,7 +4,7 @@ import json
 
 app = Flask(__name__)
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 
 def get_code_explanation_and_visualization(code_snippet):
     headers = {
